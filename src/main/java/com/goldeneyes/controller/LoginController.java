@@ -52,8 +52,8 @@ public class LoginController {
 	private LoginService loginService;
 
 	@RequestMapping("/login")
-	public String login(HttpServletRequest request, Model model,HttpServletResponse response) {
-		
+	public String login(HttpServletRequest request, Model model, HttpServletResponse response) {
+
 		return "login";
 	}
 
@@ -62,13 +62,14 @@ public class LoginController {
 	 * @param request
 	 * @param model
 	 * @return
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@RequestMapping("/loginOK")
-	public String loginOK(HttpServletRequest request, HttpSession session, HttpServletResponse response, Model model) throws IOException {
-	
+	public String loginOK(HttpServletRequest request, HttpSession session, HttpServletResponse response, Model model)
+			throws IOException {
+
 		System.out.println("前端的ajax请求过来了=====");
-		
+
 		/**
 		 * 先调握手接口，获取指数及模生成公钥以用于用户名和密码的RSA加密
 		 */
@@ -169,78 +170,114 @@ public class LoginController {
 		 */
 		String responseCode = obj.getString("RspCode");
 		String returnURL = "";
+		String rspData2 = obj.getString("RspData");
+		JSONObject obj2 = JSONObject.fromObject(rspData2);
 		switch (responseCode) {
 		case "0000":// 调用正常，能返回用户数据
 			/**
-			 * 将用户的令牌保存进session中
+			 * 取用户权限串
 			 */
-			String rspData2 = obj.getString("RspData");
-			JSONObject obj2 = JSONObject.fromObject(rspData2);
-			String token = obj2.getString("token");
-			System.out.println("token=====" + token);
-
-			HttpSession httpSession = request.getSession();
+			String upower = obj2.getString("upower");
 			/**
-			 * 用户的信息保存进session中
+			 * 如果upower为空或首位为0则登不进去
 			 */
-			httpSession.setAttribute("token", token);
-
-			String uimg = obj2.getString("uimg");
-			httpSession.setAttribute("uimg", uimg);
-			String unick = obj2.getString("unick");
-			httpSession.setAttribute("unick", unick);
-			String utxt = obj2.getString("utxt");
-			httpSession.setAttribute("utxt", utxt);
-			String uarea = obj2.getString("uarea");
-			httpSession.setAttribute("uarea", uarea);
-			String utid = obj2.getString("utid");
-			httpSession.setAttribute("utid", utid);
-			System.out.println("uarea============" + uarea);
 			/**
-			 * 拿到“省”的索引
+			 * 截取权限串的首位
 			 */
-			System.out.println("省的index====" + uarea.indexOf("省"));
+			String firstChar = upower.substring(0, 1);
 			/**
-			 * 拿到“市”的下标（index，索引）
+			 * 看是否是0,
 			 */
-			System.out.println("市的index====" + uarea.indexOf("市"));
+			Boolean flag2 = firstChar.equals("0");
 
-			/**
-			 * 如果地域不为空则 截取uarea字符串以获得城市名
-			 */
-			String cityName = "";
-			if (!uarea.equals("")) {
-
-				cityName = uarea.substring(uarea.indexOf("省") + 1 + 1, uarea.indexOf("市"));
-				System.out.println("cityName========" + cityName);
-
-			} else {
+			if (upower != null &&upower!=""&& flag2 == false) {
 				/**
-				 * 没有城市名
+				 * 将用户的令牌保存进session中
 				 */
-				cityName = "";
 
+				String token = obj2.getString("token");
+				System.out.println("token=====" + token);
+
+				HttpSession httpSession = request.getSession();
+				/**
+				 * 用户的信息保存进session中
+				 */
+				httpSession.setAttribute("token", token);
+
+				String uimg = obj2.getString("uimg");
+				httpSession.setAttribute("uimg", uimg);
+				String unick = obj2.getString("unick");
+				httpSession.setAttribute("unick", unick);
+				String utxt = obj2.getString("utxt");
+				httpSession.setAttribute("utxt", utxt);
+				String uarea = obj2.getString("uarea");
+				httpSession.setAttribute("uarea", uarea);
+				String utid = obj2.getString("utid");
+				httpSession.setAttribute("utid", utid);
+				System.out.println("uarea============" + uarea);
+				/**
+				 * 将权限串补到200位,后面补0
+				 */
+				int n = 200;
+
+				System.out.println(upower + String.format("%1$0" + (n - upower.length()) + "d", 0));
+				/**
+				 * 补位后的upower权限串
+				 */
+				String newUpower = upower + String.format("%1$0" + (n - upower.length()) + "d", 0);
+				httpSession.setAttribute("upower", newUpower);
+				/**
+				 * 拿到“省”的索引
+				 */
+				System.out.println("省的index====" + uarea.indexOf("省"));
+				/**
+				 * 拿到“市”的下标（index，索引）
+				 */
+				System.out.println("市的index====" + uarea.indexOf("市"));
+
+				/**
+				 * 如果地域不为空则 截取uarea字符串以获得城市名
+				 */
+				String cityName = "";
+				if (!uarea.equals("")) {
+
+					cityName = uarea.substring(uarea.indexOf("省") + 1 + 1, uarea.indexOf("市"));
+					System.out.println("cityName========" + cityName);
+
+				} else {
+					/**
+					 * 没有城市名
+					 */
+					cityName = "";
+
+				}
+				httpSession.setAttribute("cityName", cityName);
+				model.addAttribute("loginOK", "loginOK");
+				returnURL = "redirect:/editor.do";
+
+			}else{
+				/**
+				 * 进不去，回到登录页面
+				 */
+				PrintWriter wirter = response.getWriter();
+				wirter.write("noAdmin");
+				wirter.flush();
+
+				returnURL =null;
 			}
-			httpSession.setAttribute("cityName", cityName);
-			model.addAttribute("loginOK", "loginOK");
-			returnURL = "redirect:/editor.do";
 
-			// returnJsp = "editor";
 			break;
 		case "0005":
 			/**
 			 * 用户名或密码不正确及用户有关方面
 			 */
-			String errorMessage = "用户名或密码不正确";
-			
 
-		  PrintWriter wirter =  response.getWriter();
-		    wirter.write("error");
-		    wirter.flush();	
-		    //returnURL = "redirect:/login.do";
-			
+			PrintWriter wirter = response.getWriter();
+			wirter.write("error");
+			wirter.flush();
+			// returnURL = "redirect:/login.do";
 
-		    returnURL = null;
+			returnURL = null;
 			break;
 
 		default:

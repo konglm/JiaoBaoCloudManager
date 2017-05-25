@@ -18,19 +18,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.TreeMap;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
-import com.google.gson.Gson;
-
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import net.sf.json.JSONObject;
 
 /**
@@ -40,6 +45,63 @@ import net.sf.json.JSONObject;
 public class CommonUtil {
 	public static void main(String[] args) {
 		System.out.println(getArea("370000 370100|山东省 济南市"));
+	}
+	
+	/** 
+     * 生成随机文件名：当前年月日时分秒+五位随机数 
+     *  
+     * @return 
+     */  
+    public static String getRandomFileName() {    
+        SimpleDateFormat simpleDateFormat;    
+        simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");    
+        Date date = new Date();    
+        String str = simpleDateFormat.format(date);    
+        Random random = new Random();    
+        int rannum = (int) (random.nextDouble() * (99999 - 10000 + 1)) + 10000;// 获取5位随机数    
+        return rannum + str;// 当前时间  
+    }  
+	
+	
+	/**
+	 * 从HTML中获取视频
+	 * @param htmlStr
+	 * @return
+	 */
+	public static List<String> getVideoFromHtml(String htmlStr){
+		List<String> videos = new ArrayList<String>();
+		Document doc = Jsoup.parse(htmlStr);//解析HTML字符串返回一个Document实现
+		Elements videoEs = doc.select("video[src]");
+		for (Element videoE : videoEs) {
+			videos.add(videoE.attr("src"));
+		}
+		return videos;
+	}
+	
+	/**
+	 * 从HTML中获取图片
+	 * @param htmlStr
+	 * @return
+	 */
+	public static List<String> getPicFromHtml(String htmlStr){
+		List<String> imgs = new ArrayList<String>();
+		Document doc = Jsoup.parse(htmlStr);//解析HTML字符串返回一个Document实现
+		Elements imgEs = doc.select("img[src]");
+		for (Element imgE : imgEs) {
+			imgs.add(imgE.attr("src"));
+		}
+		return imgs;
+	}
+	
+	/**
+	 * 从HTML中获取文字
+	 * @param htmlStr
+	 * @return
+	 */
+	public static String getTxtFromHtml(String htmlStr){
+		Document doc = Jsoup.parse(htmlStr);//解析HTML字符串返回一个Document实现
+		String text = doc.body().text(); // "An example link"//取得字符串中的文本
+		return text;
 	}
 	
 	/**

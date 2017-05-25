@@ -122,8 +122,12 @@ input::-webkit-input-placeholder {
 						var errorInfo="用户名或密码错误";
 						alert(errorInfo);
 						window.location="login.do" 
+					}else if(result=='noAdmin'){
+						var info="该用户没有权限！";
+						alert(info);
+						window.location="login.do" 
 					}else{
-						window.location="editor.do"
+						window.location="editor.do" 
 					}
 				}
 				

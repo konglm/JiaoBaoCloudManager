@@ -14,7 +14,10 @@
 
 package com.goldeneyes.util;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -87,8 +90,8 @@ public class HttpUtil {
 			conn.setRequestProperty("Content-Length", String.valueOf(data.length));
 
 			// 设置文件类型:
-			conn.setRequestProperty("Content-type", "application/json");
-
+			conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+			
 			// 开始连接请求
 			conn.connect();
 			OutputStream out = conn.getOutputStream();
@@ -102,13 +105,17 @@ public class HttpUtil {
 			// 请求返回的状态
 			if (conn.getResponseCode() == 200) {
 				System.out.println("连接成功");
-				// 请求返回的数据
-				InputStream in = conn.getInputStream();
+				// 缓冲读取请求返回的数据
+				InputStream in = new BufferedInputStream(conn.getInputStream());
 				try {
-					byte[] data1 = new byte[in.available()];
-					in.read(data1);
+					StringBuilder sb = new StringBuilder();
+			        BufferedReader rd = new BufferedReader(new InputStreamReader(in,"UTF-8"));
+			        String line;
+			        while ((line = rd.readLine()) != null) {
+			            sb.append(line);
+			        }
 					// 转成字符串
-					outJson = new String(data1);
+					outJson = sb.toString();
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();

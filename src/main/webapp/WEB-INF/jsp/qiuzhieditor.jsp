@@ -19,40 +19,76 @@
  		$("#channelId").text(channelId);
  	}
 
-	function postService() {
+	function postService2() {
 		if(confirm("发布后将不可修改，是否确认发布（建议预览后再发布）？")){
 			var ue = UE.getEditor('editor');
 			var channelId = $('#channelId').text();
 			var title = $('#inputtitle').val();
+			var content = encodeURIComponent(ue.getContent());
 			if(channelId == 0){
 				alert("请选择话题！");
 			} else if (title == ''){
-				alert("请输入标题！");
-			} 
-			else {
+				alert("标题不可为空！");
+			} else if (ue.getContent() == ''){
+				alert("内容不可为空！");
+			} else if (getWordCnts(title) > 30){
+				alert("输入标题过长，发布失败！");
+			} else if (getWordCnts(ue.getContent()) > 2000){
+				alert("输入内容过长，发布失败！");
+			} else {
 				$.ajax({
 					type : "get",
-					url : "postQiuZhi.do",
+					url : "chkContent.do",
 					async : false,
-					data : "channelId=" + channelId + "&title=" + title + "&content=" + ue.getContent(),
+					dataType : "json",
+					data : "content=" + content,
 					success : function(data) {
-						$("#editorContent").html(data);
-					},
-					error : function(data) {
-						alert("发布失败！");
-					},
-					complete:function(XMLHttpRequest,textStatus){
-	                     var result=XMLHttpRequest.responseText;
-	                     if(result == 'timeout'){
-	                    	 alert("超时请重新登录！");
-	                         window.location='login.do';
-	                     } else if (textStatus == 'success'){
-	                     	alert("发布成功！");
-	                     }
-	                }
+						if (data.msg == 'havetwo') {
+							alert("不可同时上传图片和视频！");
+						} else if (data.msg == 'bignine') {
+							alert("图片最多上传9张！");
+						} else if (data.msg == 'bigone') {
+							alert("视频最多上传1条！");
+						} else {
+							$.ajax({
+								type : "get",
+								url : "postQiuZhi.do",
+								async : false,
+								data : "channelId=" + channelId + "&title=" + title + "&content=" + content,
+								success : function(data) {
+									$("#editorContent").html(data);
+								},
+								error : function(data) {
+									alert("发布失败！");
+								},
+								complete:function(XMLHttpRequest,textStatus){
+				                     var result=XMLHttpRequest.responseText;
+				                     if(result == 'timeout'){
+				                    	 alert("超时请重新登录！");
+				                         window.location='login.do';
+				                     } else if (textStatus == 'success'){
+				                     	alert("发布成功！");
+				                     }
+				                }
+							});
+						}
+					}
 				});
 			}
 		}
+	}
+	
+	//计算正文字数
+	function getWordCnts(fData) {
+		var intLength=0 
+	    for (var i=0;i<fData.length;i++) 
+	    { 
+	        if ((fData.charCodeAt(i) < 0) || (fData.charCodeAt(i) > 255)) 
+	            intLength=intLength+1 
+	        else 
+	            intLength=intLength+1    
+	    } 
+	    return intLength
 	}
 </script>
 </head>
@@ -99,12 +135,14 @@
 			var ue = UE.getEditor('editor', {
 				toolbars : [ [ "bold", "italic", "underline",
 						"insertorderedlist", "insertunorderedlist",
-						"simpleupload", "|", "preview" ] ]
+						"simpleupload", "insertvideo", "|", "preview" ] ]
 			});
 		</script>
 	</div>
 	<button class="btn btn-default pull-right btn-bg"
-		onclick="postService()">发布</button>
-	<div class="clearfix"></div>
+		onclick="postService2()">发布</button>
+	<div class="clearfix">提示：请上传".png", ".jpg", ".jpeg", ".gif"格式的图片，单张图片大小不得超过2M，不得多于9张。
+	<br>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp请上传".mp4", ".mp3"格式的音视频文件，视频大小不得超过10M，只可上传1条视频。
+	<br>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp音视频与图片不可同时上传。</div>
 </body>
 </html>

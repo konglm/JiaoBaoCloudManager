@@ -49,10 +49,16 @@ public class AuthInterceptor implements HandlerInterceptor {
 		Object sessionObj = request.getSession().getAttribute(ADMINSESSION);  
 	    if(sessionObj!=null) {  
 	      return true;  
-	    }   
-	    PrintWriter wirter =  response.getWriter();
-	    wirter.write("timeout");
-	    wirter.flush(); 
+	    } else {
+	    	if (request.getHeader("x-requested-with") != null && request.getHeader("x-requested-with").equalsIgnoreCase("XMLHttpRequest")){ //如果是ajax请求响应头会有，x-requested-with
+	    		PrintWriter wirter =  response.getWriter();
+	    	    wirter.write("timeout");
+	    	    wirter.flush();
+	    	} else {
+	    		response.sendRedirect("login.do"); 
+	    	}
+	    }
+	     
 	    return false;  
 	}
 

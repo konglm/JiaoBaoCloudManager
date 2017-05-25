@@ -57,28 +57,9 @@ public class QiniuHelper {
 		String filePath = "E:\\jinan.jpg";
 		String fileToPath = "E:\\jinan_s.jpg";
 		File file = new File(filePath);
-		int width = 0;
-		int height = 0;
 		try {
-			BufferedImage sourceImg = ImageIO.read(new FileInputStream(file));
-			width = sourceImg.getWidth();
-			height = sourceImg.getHeight();
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		System.out.println(width);
-		System.out.println(height);
-		try {
-			if ((width > 1024) || (height > 1024)) {
-				Thumbnails.of(file).size(1024, 1024).toFile(fileToPath);
-			} else {
-				Thumbnails.of(file).size(width, height).toFile(fileToPath);
-			}
-		} catch (IOException e) {
+			UploadFile(file,"jinan.jpg");
+		} catch (QiniuException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -92,58 +73,56 @@ public class QiniuHelper {
 	public static String UploadFile(File file, String fileName) throws QiniuException {
 
 		System.out.println("FileName === " + fileName);
+		// 生成文件名
+		fileName = CommonUtil.getRandomFileName() + "." + CommonUtil.getExtensionName(fileName);
 		// 先获取token
-		String tokenResult = getToken("pc/", fileName);
+		String tokenResult = getToken("pc/", fileName, "8");
 		JSONObject jsonToken = JSONObject.fromObject(tokenResult);
 		JSONObject jsonData = jsonToken.getJSONObject("Data");
 		String token = jsonData.getString("Token");
 		String key = jsonData.getString("Key");
-		try {
-			if (!CommonUtil.getExtensionName(fileName).equals("mp4")) {
-				// 压缩文件
-				int width = 0;
-				int height = 0;
-				try {
-					BufferedImage sourceImg = ImageIO.read(new FileInputStream(file));
-					width = sourceImg.getWidth();
-					height = sourceImg.getHeight();
-				} catch (FileNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				String path = QiniuHelper.class.getResource("").getPath();
-				System.out.println(path);
-				try {
-					if ((width > 1024) || (height > 1024)) {
-						Thumbnails.of(file).size(1024, 1024).toFile(path + fileName);
-					} else {
-						Thumbnails.of(file).size(width, height).toFile(path + fileName);
-					}
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				// 用压缩文件上传
-				File fileNew = new File(path + fileName);
-				file = fileNew;
+		if (!CommonUtil.getExtensionName(fileName).equals("mp4")) {
+			// 压缩文件
+			int width = 0;
+			int height = 0;
+			try {
+				BufferedImage sourceImg = ImageIO.read(new FileInputStream(file));
+				width = sourceImg.getWidth();
+				height = sourceImg.getHeight();
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
-			// 创建上传对象
-			Configuration config = new Configuration(Zone.zone0());
-			UploadManager uploadManager = new UploadManager(config);
-
-			// 上传文件
-			Response response = uploadManager.put(file, key, token);
-			// 解析上传成功的结果
-			DefaultPutRet putRet = new Gson().fromJson(response.bodyString(), DefaultPutRet.class);
-			System.out.println("上传完毕！");
-			System.out.println(putRet.key);
-			System.out.println(putRet.hash);
-		} catch (Exception e) {
-			return "";
+			String path = QiniuHelper.class.getResource("").getPath();
+			System.out.println(path);
+			try {
+				if ((width > 1024) || (height > 1024)) {
+					Thumbnails.of(file).size(1024, 1024).toFile(path + fileName);
+				} else {
+					Thumbnails.of(file).size(width, height).toFile(path + fileName);
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// 用压缩文件上传
+			File fileNew = new File(path + fileName);
+			file = fileNew;
 		}
+		// 创建上传对象
+		Configuration config = new Configuration(Zone.zone0());
+		UploadManager uploadManager = new UploadManager(config);
+
+		// 上传文件
+		Response response = uploadManager.put(file, key, token);
+		// 解析上传成功的结果
+		DefaultPutRet putRet = new Gson().fromJson(response.bodyString(), DefaultPutRet.class);
+		System.out.println("上传完毕！");
+		System.out.println(putRet.key);
+		System.out.println(putRet.hash);
 		return key;
 	}
 
@@ -155,7 +134,7 @@ public class QiniuHelper {
 	}
 
 	// 获取Token
-	public static String getToken(String uploadSpace, String fileName) {
+	public static String getToken(String uploadSpace, String fileName, String appId) {
 		// 设置参数
 		String str_Key = uploadSpace + fileName;// 此处不需要添加第一级前缀名，一级前缀名由授权接口控制，之后的前缀名及命名规范由各APP自行控制
 		String mainSpace = str_BucketName;
@@ -163,16 +142,16 @@ public class QiniuHelper {
 		String thumbSpace = saveSpace + "thumb/";
 		String thumbName = fileName;
 		if (CommonUtil.getExtensionName(fileName).equals("mp4")) {
-			thumbName =  CommonUtil.getFileNameNoEx(fileName) + ".jpg";
+			thumbName = CommonUtil.getFileNameNoEx(fileName) + ".jpg";
 		}
 		String thumbKey = UrlSafeBase64.encodeToString((mainSpace + ":" + thumbSpace + thumbName).getBytes());
 		System.out.println(thumbKey);
 		String str_Pops = "";
 		if (CommonUtil.getExtensionName(fileName).equals("mp4")) {
-			str_Pops = "vframe/jpg/offset/1/w/200/h/200|saveas/" + thumbKey;// 此处可追加预处理命令，视频上传的时候，一起上传缩略图
+			str_Pops = "vframe/jpg/offset/1/w/" + maxSize + "/h/" + maxSize + "|saveas/" + thumbKey;// 此处可追加预处理命令，视频上传的时候，一起上传缩略图
 		} else {
 			str_Pops = "imageView2/1/w/" + maxSize + "/h/" + maxSize + "/format/png|saveas/" + thumbKey;// 此处可追加预处理命令，图片在上传原图的时候，一起上传缩略图
-		}		
+		}
 		// String str_Pops = ""; // 需要保存的指令，指定文件key时
 		// 一样不需要添加第一级前缀名，接口程序会处理
 		String str_NotifyUrl = "";// 通知页面地址
@@ -191,8 +170,8 @@ public class QiniuHelper {
 		String result = "";
 		System.out.println(CommonUtil.getProp("GetUpLoadToKenUrl"));
 		try {
-			result = httpPost(CommonUtil.getProp("GetUpLoadToKenUrl"), "7",
-					desEncrypt(getAppPwd("7"), objectMapper.writeValueAsString(com)));
+			result = httpPost(CommonUtil.getProp("GetUpLoadToKenUrl"), appId,
+					desEncrypt(getAppPwd(appId), objectMapper.writeValueAsString(com)));
 			System.out.println("result ====== " + result);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -293,6 +272,7 @@ public class QiniuHelper {
 
 	/**
 	 * 根据APPID返回密码
+	 * 
 	 * @param appId
 	 * @return
 	 */
@@ -301,25 +281,28 @@ public class QiniuHelper {
 		case "1": {
 			return "";
 		}
-		case "2": {
+		case "2": {// 资源平台
 			return "jsy8004";
 		}
-		case "3": {
+		case "3": {// 教宝云作业
 			return "zy309309!";
 		}
-		case "4": {
+		case "4": {// 教宝云盘
 			return "jbyp@2017";
 		}
-		case "5": {
+		case "5": {// 教宝云用户管理
 			return "jbman456";
 		}
-		case "6": {
+		case "6": {// 家校圈
 			return "jxq789!@";
 		}
-		case "7": {
+		case "7": {// 求知
 			return "qz123qwe";
 		}
-		default:{
+		case "8": {// pc
+			return "ypc890$";
+		}
+		default: {
 			return "";
 		}
 		}
