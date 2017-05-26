@@ -396,7 +396,7 @@ input {
 				<li><a
 					style="width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
 					href="#" style="padding: 10px 15px;line-height: 30px;"><img
-						class="img-circle" src="img/touxiang.png" accesskey="我是头像"
+						class="img-circle" src="${uimg}" accesskey="我是头像"
 						width="22px" height="22px" style="margin-right: 10px;"><span>${unick}</span></a></li>
 
 			</ul>

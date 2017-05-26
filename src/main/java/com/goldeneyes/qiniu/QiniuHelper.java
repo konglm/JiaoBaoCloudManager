@@ -81,10 +81,10 @@ public class QiniuHelper {
 		JSONObject jsonData = jsonToken.getJSONObject("Data");
 		String token = jsonData.getString("Token");
 		String key = jsonData.getString("Key");
+		int width = 0;
+		int height = 0;
 		if (!CommonUtil.getExtensionName(fileName).equals("mp4")) {
-			// 压缩文件
-			int width = 0;
-			int height = 0;
+			// 压缩文件			
 			try {
 				BufferedImage sourceImg = ImageIO.read(new FileInputStream(file));
 				width = sourceImg.getWidth();
@@ -96,21 +96,21 @@ public class QiniuHelper {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			String path = QiniuHelper.class.getResource("").getPath();
-			System.out.println(path);
+//			String path = QiniuHelper.class.getResource("").getPath();
+//			System.out.println(path);
+			File directory = new File("");//设定为当前文件夹   
 			try {
 				if ((width > 1024) || (height > 1024)) {
-					Thumbnails.of(file).size(1024, 1024).toFile(path + fileName);
-				} else {
-					Thumbnails.of(file).size(width, height).toFile(path + fileName);
-				}
+					Thumbnails.of(file).size(1024, 1024).toFile(directory.getAbsolutePath() + "/" + fileName);
+//					// 用压缩文件上传
+					File fileNew = new File(directory.getAbsolutePath() + "/" + fileName);
+					file = fileNew;
+				} 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// 用压缩文件上传
-			File fileNew = new File(path + fileName);
-			file = fileNew;
+			
 		}
 		// 创建上传对象
 		Configuration config = new Configuration(Zone.zone0());
@@ -123,6 +123,10 @@ public class QiniuHelper {
 		System.out.println("上传完毕！");
 		System.out.println(putRet.key);
 		System.out.println(putRet.hash);
+		//如果压缩过，删除压缩文件
+		if ((width > 1024) || (height > 1024)) {
+			file.delete();
+		}
 		return key;
 	}
 
@@ -149,6 +153,8 @@ public class QiniuHelper {
 		String str_Pops = "";
 		if (CommonUtil.getExtensionName(fileName).equals("mp4")) {
 			str_Pops = "vframe/jpg/offset/1/w/" + maxSize + "/h/" + maxSize + "|saveas/" + thumbKey;// 此处可追加预处理命令，视频上传的时候，一起上传缩略图
+		} else if  (CommonUtil.getExtensionName(fileName).equals("mp3")) {
+			str_Pops = "";
 		} else {
 			str_Pops = "imageView2/1/w/" + maxSize + "/h/" + maxSize + "/format/png|saveas/" + thumbKey;// 此处可追加预处理命令，图片在上传原图的时候，一起上传缩略图
 		}
